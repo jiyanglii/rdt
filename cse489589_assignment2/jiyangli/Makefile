@@ -4,7 +4,7 @@ OBJ_DIR	= ./object
 
 BINS = abt gbn sr
 
-LIBS = 
+LIBS =
 CC	= gcc
 CFLAGS	= -g -I$(INC_DIR)
 
