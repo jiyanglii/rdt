@@ -23,9 +23,10 @@
 /********* STUDENTS WRITE THE NEXT SIX ROUTINES *********/
 int msgc;
 int seq;
-int ack;
+int next_seq;
 float increment;
 struct pkt *msg_pkt;
+struct pkt *ack_pkt;
 
 int checksum(char *str){
     int sum = 0;
@@ -36,15 +37,15 @@ int checksum(char *str){
     return sum;
 }
 
-void make_pkt(struct msg message, int seq, int checksum){
+void make_pkt(int seq, struct msg message, int checksum){
     msg_pkt->seqnum = seq;
     msg_pkt->acknum = seq;
     if (message==NULL) {
         msg_pkt->checksum = msg_pkt->seqnum + msg_pkt->acknum;
     }
     else{
-        msg_pkt->checksum = checksum + msg_pkt->seqnum + msg_pkt->acknum;
         strcpy(msg_pkt->payload, message.data);
+        msg_pkt->checksum = checksum + msg_pkt->seqnum + msg_pkt->acknum;
     }
 }
 
@@ -52,24 +53,12 @@ void make_pkt(struct msg message, int seq, int checksum){
 void A_output(message)
   struct msg message;
 {
-    // call 0 from above
-    if(seq==0){
-        checks = checksum(message.data);
-        msg_pkt = make_pkt(seq, buffer[msgc], checks);
-        tolayer3(0, msg_pkt);
-        msgc++;
-        starttimer(0, increment);
-        seq = 1;
-    }
-    // call 1 from above
-    if(seq==1){
-        checks = checksum(message.data);
-        msg_pkt = make_pkt(seq, buffer[msgc], checks);
-        tolayer3(0, msg_pkt);
-        msgc++;
-        starttimer(0, increment);
-        seq = 0;
-    }
+    checks = checksum(message.data);
+    msg_pkt = make_pkt(seq, buffer[msgc], checks);
+    tolayer3(0, msg_pkt);
+    msgc++;
+    starttimer(0, increment);
+    seq = (seq + 1) % 2;
 }
 
 /* called from layer 3, when a packet arrives for layer 4 */
@@ -103,7 +92,6 @@ void A_init()
 {
     int msgc = 0;
     int seq = 0;
-    int ack = 0;
     float increment = 15;
 
 }
@@ -115,10 +103,16 @@ void B_input(packet)
   struct pkt packet;
 {
     check_msg = packet.seqnum + packet.acknum + checksum(packet.payload);
-    if(check_msg==packet.checksum){
-        if(packet.seqnum==0){
+    if(check_msg == packet.checksum){
+        if(packet.seqnum == next_seq){
+            ack_pkt = make_pkt(packet.seqnum, NULL, check_msg);
+            tolayer3(1, ack_pkt);
+            tolayer5(1, packet.payload);
+            next_seq = (next_seq + 1) % 2;
+        }
+        else{
             make_pkt(packet.seqnum, NULL, check_msg);
-            tolayer3(1, )
+            tolayer3(1, packet);
         }
     }
 
@@ -128,5 +122,5 @@ void B_input(packet)
 /* entity B routines are called. You can use it to do any initialization */
 void B_init()
 {
-
+    int next_seq = 0;
 }
