@@ -5,6 +5,8 @@
 #include <string.h>
 #include <strings.h>
 #include <getopt.h>
+#include "gbn.h"
+
 
 
 /* ******************************************************************
@@ -23,12 +25,14 @@
 /********* STUDENTS WRITE THE NEXT SIX ROUTINES *********/
 int msgc;
 int seq;
+int exp_seq;
 int next_seq;
 int base;
 int N; // window size
 float increment;
 struct pkt *msg_pkt;
 struct pkt *ack_pkt;
+struct msg buffer[MSG_SIZE];
 
 
 int checksum(char *str){
@@ -56,13 +60,19 @@ void make_pkt(int seq, struct msg message, int checksum){
 void A_output(message)
 struct msg message;
 {
+    if(msgc > MSG_SIZE - 1){
+        exit(-1);
+    }
+    buffer[msgc] == message;
+    msgc++;
     while(next_seq < base + N){
-        checks = checksum(message.data);
-        msg_pkt = make_pkt(next_seq, buffer[msgc], checks);
+        if(next_seq == base)
+            starttimer(0, increment);
+        
+        checks = checksum(buffer[next_seq].data);
+        msg_pkt = make_pkt(next_seq, buffer[next_seq].data, checks);
         tolayer3(0, msg_pkt)
-        msgc++;
         next_seq++;
-        starttimer(0, increment);
     }
     
 }
@@ -71,15 +81,11 @@ struct msg message;
 void A_input(packet)
 struct pkt packet;
 {   check_ack = packet.seqnum + packet.acknum;
-    if(check_ack==packet.checksum){
+    if(check_ack == packet.checksum){
         
-        if(packet.acknum==0){
-            tolayer5(0, message);
+        if(packet.acknum == next_seq - 1){
             stoptimer(0);
-        }
-        if(packet.acknum==1){
-            tolayer5(0, message);
-            stoptimer(0);
+            base++;
         }
     }
 }
@@ -87,9 +93,15 @@ struct pkt packet;
 /* called when A's timer goes off */
 void A_timerinterrupt()
 {
-    tolayer3(0, msg_pkt);
+    next_seq = base;
     starttimer(0, increment);
-    
+
+    while(next_seq < base + N){
+        checks = checksum(buffer[next_seq].data);
+        msg_pkt = make_pkt(next_seq, buffer[next_seq].data, checks);
+        tolayer3(0, msg_pkt)
+        next_seq++;
+    }
 }
 
 /* the following routine will be called once (only) before any other */
@@ -99,6 +111,9 @@ void A_init()
     int msgc = 0;
     int seq = 0;
     float increment = 15;
+    int base = 0;
+    int N = 10;
+    int next_seq = 0;
     
 }
 
@@ -110,15 +125,15 @@ struct pkt packet;
 {
     check_msg = packet.seqnum + packet.acknum + checksum(packet.payload);
     if(check_msg == packet.checksum){
-        if(packet.seqnum == next_seq){
+        if(packet.seqnum == exp_seq){
             ack_pkt = make_pkt(packet.seqnum, NULL, check_msg);
             tolayer3(1, ack_pkt);
             tolayer5(1, packet.payload);
-            next_seq = (next_seq + 1) % 2;
+            exp_seq++;
         }
         else{
-            make_pkt(packet.seqnum, NULL, check_msg);
-            tolayer3(1, packet);
+            ack_pkt = make_pkt(exp_seq - 1, NULL, check_msg);
+            tolayer3(1, ack_pkt);
         }
     }
     
@@ -128,5 +143,5 @@ struct pkt packet;
 /* entity B routines are called. You can use it to do any initialization */
 void B_init()
 {
-    int next_seq = 0;
+    int exp_seq = 0;
 }

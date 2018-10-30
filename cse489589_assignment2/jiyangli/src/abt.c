@@ -5,6 +5,7 @@
 #include <string.h>
 #include <strings.h>
 #include <getopt.h>
+#include "abt.h"
 
 
 /* ******************************************************************
@@ -23,10 +24,11 @@
 /********* STUDENTS WRITE THE NEXT SIX ROUTINES *********/
 int msgc;
 int seq;
-int next_seq;
+int exp_seq;
 float increment;
 struct pkt *msg_pkt;
 struct pkt *ack_pkt;
+struct msg buffer[MSG_SIZE];
 
 int checksum(char *str){
     int sum = 0;
@@ -53,8 +55,12 @@ void make_pkt(int seq, struct msg message, int checksum){
 void A_output(message)
   struct msg message;
 {
+    if(msgc > MSG_SIZE - 1){
+        exit(-1);
+    }
+    buffer[msgc] = message;
     checks = checksum(message.data);
-    msg_pkt = make_pkt(seq, buffer[msgc], checks);
+    msg_pkt = make_pkt(seq, message.data, checks);
     tolayer3(0, msg_pkt);
     msgc++;
     starttimer(0, increment);
@@ -65,10 +71,9 @@ void A_output(message)
 void A_input(packet)
   struct pkt packet;
 {   check_ack = packet.seqnum + packet.acknum;
-    if(check_ack==packet.checksum){
+    if(check_ack == packet.checksum){
         
         if(packet.acknum != seq){
-            tolayer5(0, message);
             stoptimer(0);
         }
     }
@@ -102,9 +107,9 @@ void B_input(packet)
     if(check_msg == packet.checksum){
         ack_pkt = make_pkt(packet.seqnum, NULL, check_msg);
         tolayer3(1, ack_pkt);
-        if(packet.seqnum == next_seq){
+        if(packet.seqnum == exp_seq){
             tolayer5(1, packet.payload);
-            next_seq = (next_seq + 1) % 2;
+            exp_seq = (exp_seq + 1) % 2;
         }
     }
 
@@ -114,5 +119,5 @@ void B_input(packet)
 /* entity B routines are called. You can use it to do any initialization */
 void B_init()
 {
-    int next_seq = 0;
+    int exp_seq = 0;
 }
