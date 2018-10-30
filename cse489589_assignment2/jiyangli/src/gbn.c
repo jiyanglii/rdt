@@ -11,7 +11,7 @@
 
 /* ******************************************************************
  ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.1  J.F.Kurose
- 
+
  This code should be used for PA2, unidirectional data transfer
  protocols (from A to B). Network properties:
  - one way network delay averages five time units (longer if there
@@ -68,13 +68,13 @@ struct msg message;
     while(next_seq < base + N){
         if(next_seq == base)
             starttimer(0, increment);
-        
+
         checks = checksum(buffer[next_seq].data);
-        msg_pkt = make_pkt(next_seq, buffer[next_seq].data, checks);
+        make_pkt(next_seq, buffer[next_seq].data, checks);
         tolayer3(0, msg_pkt)
         next_seq++;
     }
-    
+
 }
 
 /* called from layer 3, when a packet arrives for layer 4 */
@@ -82,7 +82,7 @@ void A_input(packet)
 struct pkt packet;
 {   check_ack = packet.seqnum + packet.acknum;
     if(check_ack == packet.checksum){
-        
+
         if(packet.acknum == next_seq - 1){
             stoptimer(0);
             base++;
@@ -98,7 +98,7 @@ void A_timerinterrupt()
 
     while(next_seq < base + N){
         checks = checksum(buffer[next_seq].data);
-        msg_pkt = make_pkt(next_seq, buffer[next_seq].data, checks);
+        make_pkt(next_seq, buffer[next_seq].data, checks);
         tolayer3(0, msg_pkt)
         next_seq++;
     }
@@ -114,7 +114,7 @@ void A_init()
     int base = 0;
     int N = 10;
     int next_seq = 0;
-    
+
 }
 
 /* Note that with simplex transfer from a-to-B, there is no B_output() */
@@ -126,17 +126,17 @@ struct pkt packet;
     check_msg = packet.seqnum + packet.acknum + checksum(packet.payload);
     if(check_msg == packet.checksum){
         if(packet.seqnum == exp_seq){
-            ack_pkt = make_pkt(packet.seqnum, NULL, check_msg);
+            make_pkt(packet.seqnum, NULL, check_msg);
             tolayer3(1, ack_pkt);
             tolayer5(1, packet.payload);
             exp_seq++;
         }
         else{
-            ack_pkt = make_pkt(exp_seq - 1, NULL, check_msg);
+            make_pkt(exp_seq - 1, NULL, check_msg);
             tolayer3(1, ack_pkt);
         }
     }
-    
+
 }
 
 /* the following routine will be called once (only) before any other */

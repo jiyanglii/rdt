@@ -22,17 +22,18 @@
 **********************************************************************/
 
 /********* STUDENTS WRITE THE NEXT SIX ROUTINES *********/
-int msgc;
-int seq;
-int exp_seq;
-float increment;
-struct pkt *msg_pkt;
-struct pkt *ack_pkt;
-struct msg buffer[MSG_SIZE];
+static int msgc;
+static int seq;
+static int exp_seq;
+static float increment;
+static struct pkt *msg_pkt;
+static struct pkt *ack_pkt;
+static struct msg buffer[MSG_SIZE];
 
 int checksum(char *str){
     int sum = 0;
-    while (int j=0, j<=20) {
+    int j = 0;
+    while (j < 20) {
         sum += str[j];
         j++;
     }
@@ -42,7 +43,7 @@ int checksum(char *str){
 void make_pkt(int seq, struct msg message, int checksum){
     msg_pkt->seqnum = seq;
     msg_pkt->acknum = seq;
-    if (message==NULL) {
+    if (strlen(message.data) == 0) {
         msg_pkt->checksum = msg_pkt->seqnum + msg_pkt->acknum;
     }
     else{
@@ -55,13 +56,15 @@ void make_pkt(int seq, struct msg message, int checksum){
 void A_output(message)
   struct msg message;
 {
+    int checks;
+
     if(msgc > MSG_SIZE - 1){
         exit(-1);
     }
     buffer[msgc] = message;
     checks = checksum(message.data);
-    msg_pkt = make_pkt(seq, message.data, checks);
-    tolayer3(0, msg_pkt);
+    make_pkt(seq, (struct msg)message, checks);
+    tolayer3(0, (struct pkt)*msg_pkt);
     msgc++;
     starttimer(0, increment);
     seq = (seq + 1) % 2;
@@ -70,9 +73,11 @@ void A_output(message)
 /* called from layer 3, when a packet arrives for layer 4 */
 void A_input(packet)
   struct pkt packet;
-{   check_ack = packet.seqnum + packet.acknum;
+{
+    int check_ack;
+    check_ack = packet.seqnum + packet.acknum;
     if(check_ack == packet.checksum){
-        
+
         if(packet.acknum != seq){
             stoptimer(0);
         }
@@ -82,7 +87,7 @@ void A_input(packet)
 /* called when A's timer goes off */
 void A_timerinterrupt()
 {
-    tolayer3(0, msg_pkt);
+    tolayer3(0, (struct pkt)*msg_pkt);
     starttimer(0, increment);
 
 }
@@ -103,10 +108,14 @@ void A_init()
 void B_input(packet)
   struct pkt packet;
 {
+    int check_msg;
+    struct msg temp;
+    memset(temp.data, '\0', 20);
+
     check_msg = packet.seqnum + packet.acknum + checksum(packet.payload);
     if(check_msg == packet.checksum){
-        ack_pkt = make_pkt(packet.seqnum, NULL, check_msg);
-        tolayer3(1, ack_pkt);
+        make_pkt(packet.seqnum, temp, check_msg);
+        tolayer3(1, (struct pkt)*ack_pkt);
         if(packet.seqnum == exp_seq){
             tolayer5(1, packet.payload);
             exp_seq = (exp_seq + 1) % 2;
