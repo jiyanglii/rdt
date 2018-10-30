@@ -67,11 +67,7 @@ void A_input(packet)
 {   check_ack = packet.seqnum + packet.acknum;
     if(check_ack==packet.checksum){
         
-        if(packet.acknum==0){
-            tolayer5(0, message);
-            stoptimer(0);
-        }
-        if(packet.acknum==1){
+        if(packet.acknum != seq){
             tolayer5(0, message);
             stoptimer(0);
         }
@@ -104,15 +100,11 @@ void B_input(packet)
 {
     check_msg = packet.seqnum + packet.acknum + checksum(packet.payload);
     if(check_msg == packet.checksum){
+        ack_pkt = make_pkt(packet.seqnum, NULL, check_msg);
+        tolayer3(1, ack_pkt);
         if(packet.seqnum == next_seq){
-            ack_pkt = make_pkt(packet.seqnum, NULL, check_msg);
-            tolayer3(1, ack_pkt);
             tolayer5(1, packet.payload);
             next_seq = (next_seq + 1) % 2;
-        }
-        else{
-            make_pkt(packet.seqnum, NULL, check_msg);
-            tolayer3(1, packet);
         }
     }
 
