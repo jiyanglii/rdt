@@ -2,7 +2,6 @@
 #define SIMULATOR_H_
 
 #define BIDIRECTIONAL 0
-#define MSG_SIZE 1000
 
 /* a "msg" is the data unit passed from layer 5 (teachers code) to layer  */
 /* 4 (students' code).  It contains the data (characters) to be delivered */
