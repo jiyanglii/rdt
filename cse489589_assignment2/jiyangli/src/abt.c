@@ -1,5 +1,13 @@
 #include "../include/simulator.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <strings.h>
+#include <getopt.h>
+#include "abt.h"
+
+
 /* ******************************************************************
  ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.1  J.F.Kurose
 
@@ -14,24 +22,68 @@
 **********************************************************************/
 
 /********* STUDENTS WRITE THE NEXT SIX ROUTINES *********/
+int msgc;
+int seq;
+int exp_seq;
+float increment;
+struct pkt *msg_pkt;
+struct pkt *ack_pkt;
+struct msg buffer[MSG_SIZE];
+
+int checksum(char *str){
+    int sum = 0;
+    while (int j=0, j<=20) {
+        sum += str[j];
+        j++;
+    }
+    return sum;
+}
+
+void make_pkt(int seq, struct msg message, int checksum){
+    msg_pkt->seqnum = seq;
+    msg_pkt->acknum = seq;
+    if (message==NULL) {
+        msg_pkt->checksum = msg_pkt->seqnum + msg_pkt->acknum;
+    }
+    else{
+        strcpy(msg_pkt->payload, message.data);
+        msg_pkt->checksum = checksum + msg_pkt->seqnum + msg_pkt->acknum;
+    }
+}
 
 /* called from layer 5, passed the data to be sent to other side */
 void A_output(message)
   struct msg message;
 {
-
+    if(msgc > MSG_SIZE - 1){
+        exit(-1);
+    }
+    buffer[msgc] = message;
+    checks = checksum(message.data);
+    msg_pkt = make_pkt(seq, message.data, checks);
+    tolayer3(0, msg_pkt);
+    msgc++;
+    starttimer(0, increment);
+    seq = (seq + 1) % 2;
 }
 
 /* called from layer 3, when a packet arrives for layer 4 */
 void A_input(packet)
   struct pkt packet;
-{
-
+{   check_ack = packet.seqnum + packet.acknum;
+    if(check_ack == packet.checksum){
+        
+        if(packet.acknum != seq){
+            stoptimer(0);
+        }
+    }
 }
 
 /* called when A's timer goes off */
 void A_timerinterrupt()
 {
+    tolayer3(0, msg_pkt);
+    starttimer(0, increment);
 
 }
 
@@ -39,6 +91,9 @@ void A_timerinterrupt()
 /* entity A routines are called. You can use it to do any initialization */
 void A_init()
 {
+    int msgc = 0;
+    int seq = 0;
+    float increment = 15;
 
 }
 
@@ -48,6 +103,15 @@ void A_init()
 void B_input(packet)
   struct pkt packet;
 {
+    check_msg = packet.seqnum + packet.acknum + checksum(packet.payload);
+    if(check_msg == packet.checksum){
+        ack_pkt = make_pkt(packet.seqnum, NULL, check_msg);
+        tolayer3(1, ack_pkt);
+        if(packet.seqnum == exp_seq){
+            tolayer5(1, packet.payload);
+            exp_seq = (exp_seq + 1) % 2;
+        }
+    }
 
 }
 
@@ -55,5 +119,5 @@ void B_input(packet)
 /* entity B routines are called. You can use it to do any initialization */
 void B_init()
 {
-
+    int exp_seq = 0;
 }
