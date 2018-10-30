@@ -162,53 +162,56 @@ int main(int argc, char **argv)
                         display_usage(argv[0]);
                         return -1;
        }
-   }
+    }
 
-   init(seed);
-   A_init();
-   B_init();
+    init(seed);
+    A_init();
+    B_init();
 
-   while (1) {
+    while (1) {
         eventptr = evlist;            /* get next event to simulate */
         if (eventptr==NULL)
            goto terminate;
         evlist = evlist->next;        /* remove this event from event list */
         if (evlist!=NULL)
            evlist->prev=NULL;
+
         if (TRACE>=2) {
-           printf("\nEVENT time: %f,",eventptr->evtime);
-           printf("  type: %d",eventptr->evtype);
-           if (eventptr->evtype==0)
-           printf(", timerinterrupt  ");
-             else if (eventptr->evtype==1)
-               printf(", fromlayer5 ");
-             else
-         printf(", fromlayer3 ");
-           printf(" entity: %d\n",eventptr->eventity);
-           }
+            printf("\nEVENT time: %f,",eventptr->evtime);
+            printf("  type: %d",eventptr->evtype);
+            if (eventptr->evtype==0)
+                printf(", timerinterrupt  ");
+            else if (eventptr->evtype==1)
+                printf(", fromlayer5 ");
+            else
+                printf(", fromlayer3 ");
+            printf(" entity: %d\n",eventptr->eventity);
+        }
+
         time = eventptr->evtime;        /* update time to next event time */
         if (nsim==nsimmax)
-      break;                        /* all done with simulation */
+            break;                        /* all done with simulation */
+
         if (eventptr->evtype == FROM_LAYER5 ) {
             generate_next_arrival();   /* set up future arrival */
             /* fill in msg to give with string of same letter */
             j = nsim % 26;
             for (i=0; i<20; i++)
-               msg2give.data[i] = 97 + j;
+                msg2give.data[i] = 97 + j;
             if (TRACE>2) {
-               printf("          MAINLOOP: data given to student: ");
-                 for (i=0; i<20; i++)
-                  printf("%c", msg2give.data[i]);
-               printf("\n");
-         }
+                printf("          MAINLOOP: data given to student: ");
+                for (i=0; i<20; i++)
+                    printf("%c", msg2give.data[i]);
+                printf("\n");
+            }
             nsim++;
             if (eventptr->eventity == A)
             {
                 A_application += 1;
 
-              memcpy(application_msgs[cur_msg_sent].msg_chars, msg2give.data, 20);
-              application_msgs[cur_msg_sent].delivered = 0;
-              cur_msg_sent += 1;
+                memcpy(application_msgs[cur_msg_sent].msg_chars, msg2give.data, 20);
+                application_msgs[cur_msg_sent].delivered = 0;
+                cur_msg_sent += 1;
 
                 A_output(msg2give);
             }
@@ -216,34 +219,37 @@ int main(int argc, char **argv)
              else
                B_output(msg2give);
              */
-            }
-          else if (eventptr->evtype ==  FROM_LAYER3) {
+        }
+        else if (eventptr->evtype ==  FROM_LAYER3)
+        {
             pkt2give.seqnum = eventptr->pktptr->seqnum;
             pkt2give.acknum = eventptr->pktptr->acknum;
             pkt2give.checksum = eventptr->pktptr->checksum;
             for (i=0; i<20; i++)
                 pkt2give.payload[i] = eventptr->pktptr->payload[i];
-        if (eventptr->eventity ==A)      /* deliver packet by calling */
+
+            if (eventptr->eventity ==A)      /* deliver packet by calling */
                 A_input(pkt2give);            /* appropriate entity */
             else
             {
                 B_transport += 1;
                 B_input(pkt2give);
             }
-        free(eventptr->pktptr);          /* free the memory for packet */
-            }
-          else if (eventptr->evtype ==  TIMER_INTERRUPT) {
+
+            free(eventptr->pktptr);          /* free the memory for packet */
+        }
+        else if (eventptr->evtype ==  TIMER_INTERRUPT) {
             if (eventptr->eventity == A)
-           A_timerinterrupt();
+                A_timerinterrupt();
            /*
              else
            B_timerinterrupt();
            */
              }
-          else  {
-         printf("INTERNAL PANIC: unknown event type \n");
-             }
-        free(eventptr);
+            else  {
+                printf("INTERNAL PANIC: unknown event type \n");
+            }
+            free(eventptr);
         }
 
 terminate:
