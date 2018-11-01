@@ -13,7 +13,7 @@
 /* ******************************************************************
  ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.1  J.F.Kurose
 
-   This code should be used for PA2, unidirectional data transfer 
+   This code should be used for PA2, unidirectional data transfer
    protocols (from A to B). Network properties:
    - one way network delay averages five time units (longer if there
      are other messages in the channel for GBN), but can be larger
@@ -46,7 +46,7 @@ int checksum(char *str){
     return sum;
 }
 
-void make_pkt(int seq, (struct msg)*message, int checksum){
+void make_pkt(int seq, struct msg message, int checksum){
     msg_pkt->seqnum = seq;
     msg_pkt->acknum = seq;
     strcpy(msg_pkt->payload, message.data);
@@ -67,14 +67,14 @@ void A_output(message)
     if(msgc > MSG_SIZE - 1){
         exit(-1);
     }
-    buffer[msgc] = messages;
+    buffer[msgc] = message;
     msgc++;
     while(next_seq < base + N){
         if(next_seq == base)
             starttimer(0, increment);
         check_msg = checksum(buffer[next_seq].data);
-        make_pkt(next_seq, buffer[next_seq].data, check_msg);
-        tolayer3(0, (struct pkg)*msg_pkt);
+        make_pkt(next_seq, buffer[next_seq], check_msg);
+        tolayer3(0, (struct pkt)*msg_pkt);
         next_seq++;
     }
 
@@ -91,13 +91,13 @@ void A_input(packet)
 void A_timerinterrupt()
 {
 
-}  
+}
 
 /* the following routine will be called once (only) before any other */
 /* entity A routines are called. You can use it to do any initialization */
 void A_init()
 {
-  
+
 }
 
 /* Note that with simplex transfer from a-to-B, there is no B_output() */

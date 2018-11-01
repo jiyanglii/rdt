@@ -40,7 +40,7 @@ int checksum(char *str){
     return sum;
 }
 
-void make_pkt(int seq, (struct msg)*message, int checksum){
+void make_pkt(int seq, struct msg message, int checksum){
     msg_pkt->seqnum = seq;
     msg_pkt->acknum = seq;
     strcpy(msg_pkt->payload, message.data);
