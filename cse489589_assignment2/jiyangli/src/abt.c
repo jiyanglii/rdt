@@ -40,30 +40,31 @@ int checksum(char *str){
     return sum;
 }
 
-void make_pkt(int seq, struct msg message, int checksum){
+void make_pkt(int seq, (struct msg)*message, int checksum){
     msg_pkt->seqnum = seq;
     msg_pkt->acknum = seq;
-    if (strlen(message.data) == 0) {
-        msg_pkt->checksum = msg_pkt->seqnum + msg_pkt->acknum;
-    }
-    else{
-        strcpy(msg_pkt->payload, message.data);
-        msg_pkt->checksum = checksum + msg_pkt->seqnum + msg_pkt->acknum;
-    }
+    strcpy(msg_pkt->payload, message.data);
+    msg_pkt->checksum = checksum + msg_pkt->seqnum + msg_pkt->acknum;
+}
+
+void make_ack(int seq, int checksum){
+    ack_pkt->seqnum = seq;
+    ack_pkt->acknum = seq;
+    ack_pkt->checksum = ack_pkt->seqnum + ack_pkt->acknum;
 }
 
 /* called from layer 5, passed the data to be sent to other side */
 void A_output(message)
   struct msg message;
 {
-    int checks;
+    int check_msg;
 
     if(msgc > MSG_SIZE - 1){
         exit(-1);
     }
     buffer[msgc] = message;
-    checks = checksum(message.data);
-    make_pkt(seq, (struct msg)message, checks);
+    check_msg = checksum(message.data);
+    make_pkt(seq, (struct msg)message, check_msg);
     tolayer3(0, (struct pkt)*msg_pkt);
     msgc++;
     starttimer(0, increment);
@@ -109,12 +110,9 @@ void B_input(packet)
   struct pkt packet;
 {
     int check_msg;
-    struct msg temp;
-    memset(temp.data, '\0', 20);
-
     check_msg = packet.seqnum + packet.acknum + checksum(packet.payload);
     if(check_msg == packet.checksum){
-        make_pkt(packet.seqnum, temp, check_msg);
+        make_ack(packet.seqnum, check_msg);
         tolayer3(1, (struct pkt)*ack_pkt);
         if(packet.seqnum == exp_seq){
             tolayer5(1, packet.payload);

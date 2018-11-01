@@ -7,7 +7,8 @@
 #include <getopt.h>
 #include "gbn.h"
 
-
+#define MSG_SIZE 1000  /* maximum number of messages can buffer */
+#define N 10           /* window size */
 
 /* ******************************************************************
  ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.1  J.F.Kurose
@@ -23,58 +24,58 @@
  **********************************************************************/
 
 /********* STUDENTS WRITE THE NEXT SIX ROUTINES *********/
-int msgc;
-int seq;
-int exp_seq;
-int next_seq;
-int base;
-int N; // window size
-float increment;
-struct pkt *msg_pkt;
-struct pkt *ack_pkt;
-struct msg buffer[MSG_SIZE];
+static int msgc;
+static int seq;
+static int exp_seq;
+static int next_seq;
+static int base;
+static float increment;
+static struct pkt *msg_pkt;
+static struct pkt *ack_pkt;
+static struct msg buffer[MSG_SIZE];
 
 
 int checksum(char *str){
     int sum = 0;
-    while (int j=0, j<=20) {
+    int j = 0;
+    while (j < 20) {
         sum += str[j];
         j++;
     }
     return sum;
 }
 
-void make_pkt(int seq, struct msg message, int checksum){
+void make_pkt(int seq, (struct msg)*message, int checksum){
     msg_pkt->seqnum = seq;
     msg_pkt->acknum = seq;
-    if (message==NULL) {
-        msg_pkt->checksum = msg_pkt->seqnum + msg_pkt->acknum;
-    }
-    else{
-        strcpy(msg_pkt->payload, message.data);
-        msg_pkt->checksum = checksum + msg_pkt->seqnum + msg_pkt->acknum;
-    }
+    strcpy(msg_pkt->payload, message.data);
+    msg_pkt->checksum = checksum + msg_pkt->seqnum + msg_pkt->acknum;
+}
+
+void make_ack(int seq, int checksum){
+    ack_pkt->seqnum = seq;
+    ack_pkt->acknum = seq;
+    ack_pkt->checksum = ack_pkt->seqnum + ack_pkt->acknum;
 }
 
 /* called from layer 5, passed the data to be sent to other side */
 void A_output(message)
 struct msg message;
 {
+    int check_msg;
     if(msgc > MSG_SIZE - 1){
         exit(-1);
     }
-    buffer[msgc] == message;
+    buffer[msgc] = messages;
     msgc++;
     while(next_seq < base + N){
         if(next_seq == base)
             starttimer(0, increment);
-
-        checks = checksum(buffer[next_seq].data);
-        make_pkt(next_seq, buffer[next_seq].data, checks);
-        tolayer3(0, msg_pkt)
+        check_msg = checksum(buffer[next_seq].data);
+        make_pkt(next_seq, buffer[next_seq].data, check_msg);
+        tolayer3(0, (struct pkg)*msg_pkt);
         next_seq++;
     }
-
 }
 
 /* called from layer 3, when a packet arrives for layer 4 */
@@ -93,13 +94,14 @@ struct pkt packet;
 /* called when A's timer goes off */
 void A_timerinterrupt()
 {
+    int check_msg;
     next_seq = base;
-    starttimer(0, increment);
-
     while(next_seq < base + N){
-        checks = checksum(buffer[next_seq].data);
-        make_pkt(next_seq, buffer[next_seq].data, checks);
-        tolayer3(0, msg_pkt)
+        if(next_seq == base)
+            starttimer(0, increment);
+        check_msg = checksum(buffer[next_seq].data);
+        make_pkt(next_seq, buffer[next_seq].data, check_msg);
+        tolayer3(0, (struct pkg)*msg_pkt);
         next_seq++;
     }
 }
@@ -112,7 +114,6 @@ void A_init()
     int seq = 0;
     float increment = 15;
     int base = 0;
-    int N = 10;
     int next_seq = 0;
 
 }
@@ -123,17 +124,18 @@ void A_init()
 void B_input(packet)
 struct pkt packet;
 {
+    int check_msg;
     check_msg = packet.seqnum + packet.acknum + checksum(packet.payload);
     if(check_msg == packet.checksum){
         if(packet.seqnum == exp_seq){
-            make_pkt(packet.seqnum, NULL, check_msg);
-            tolayer3(1, ack_pkt);
+            make_ack(packet.seqnum, check_msg);
+            tolayer3(1, (struct pkg)*ack_pkt);
             tolayer5(1, packet.payload);
             exp_seq++;
         }
         else{
-            make_pkt(exp_seq - 1, NULL, check_msg);
-            tolayer3(1, ack_pkt);
+            make_ack(exp_seq - 1, check_msg);
+            tolayer3(1, (struct pkg)*ack_pkt);
         }
     }
 
