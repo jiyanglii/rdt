@@ -40,7 +40,7 @@ int checksum(char *str){
     return sum;
 }
 
-void make_pkt(int seq, (struct msg)*message, int checksum){
+void make_pkt(int seq, struct msg message, int checksum){
     msg_pkt->seqnum = seq;
     msg_pkt->acknum = seq;
     strcpy(msg_pkt->payload, message.data);
@@ -64,7 +64,7 @@ void A_output(message)
     }
     buffer[msgc] = message;
     check_msg = checksum(message.data);
-    make_pkt(seq, (struct msg)message, check_msg);
+    make_pkt(seq, message, check_msg);
     tolayer3(0, (struct pkt)*msg_pkt);
     msgc++;
     starttimer(0, increment);
