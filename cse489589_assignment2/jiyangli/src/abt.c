@@ -21,12 +21,12 @@
 **********************************************************************/
 
 /********* STUDENTS WRITE THE NEXT SIX ROUTINES *********/
-static int msgc;
-static int seq;
-static int exp_seq;
-static float increment;
-static struct pkt *msg_pkt;
-static struct pkt *ack_pkt;
+static int msgc = 0;
+static int seq = 0;
+static int exp_seq = 0;
+static float increment = 15;
+static struct pkt msg_pkt;
+static struct pkt ack_pkt;
 static struct msg buffer[MSG_SIZE];
 
 int checksum(char *str){
@@ -43,19 +43,19 @@ int checksum(char *str){
 }
 
 void make_pkt(int seq, struct msg message, int check_sum){
-    msg_pkt->seqnum = seq;
-    msg_pkt->acknum = seq;
+    msg_pkt.seqnum = seq;
+    msg_pkt.acknum = seq;
     printf("seq and ack set!\n");
-    strcpy(msg_pkt->payload, message.data);
+    strcpy(msg_pkt.payload, message.data);
     printf("Message copied!\n");
-    msg_pkt->checksum = check_sum + msg_pkt->seqnum + msg_pkt->acknum;
+    msg_pkt.checksum = check_sum + msg_pkt.seqnum + msg_pkt.acknum;
     printf("checksum set!\n");
 }
 
 void make_ack(int seq, int check_sum){
-    ack_pkt->seqnum = seq;
-    ack_pkt->acknum = seq;
-    ack_pkt->checksum = ack_pkt->seqnum + ack_pkt->acknum;
+    ack_pkt.seqnum = seq;
+    ack_pkt.acknum = seq;
+    ack_pkt.checksum = ack_pkt.seqnum + ack_pkt.acknum;
 }
 
 /* called from layer 5, passed the data to be sent to other side */
@@ -75,7 +75,7 @@ void A_output(message)
     printf("seq is: %d\n", seq);
     make_pkt(seq, message, check_msg);
     printf("Packet made!\n");
-    tolayer3(0, (struct pkt)*msg_pkt);
+    tolayer3(0, msg_pkt);
     msgc++;
     starttimer(0, increment);
     seq = (seq + 1) % 2;
@@ -100,7 +100,7 @@ void A_input(packet)
 /* called when A's timer goes off */
 void A_timerinterrupt()
 {
-    tolayer3(0, (struct pkt)*msg_pkt);
+    tolayer3(0, msg_pkt);
     starttimer(0, increment);
     printf("A_timerinterrupt!\n");
 
@@ -126,7 +126,7 @@ void B_input(packet)
     check_msg = packet.seqnum + packet.acknum + checksum(packet.payload);
     if(check_msg == packet.checksum){
         make_ack(packet.seqnum, check_msg);
-        tolayer3(1, (struct pkt)*ack_pkt);
+        tolayer3(1, ack_pkt);
         if(packet.seqnum == exp_seq){
             tolayer5(1, packet.payload);
             exp_seq = (exp_seq + 1) % 2;
