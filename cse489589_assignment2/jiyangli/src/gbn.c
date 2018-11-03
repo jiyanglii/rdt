@@ -5,7 +5,6 @@
 #include <string.h>
 #include <strings.h>
 #include <getopt.h>
-#include "gbn.h"
 
 #define MSG_SIZE 1000  /* maximum number of messages can buffer */
 #define N 10           /* window size */
@@ -45,14 +44,14 @@ int checksum(char *str){
     return sum;
 }
 
-void make_pkt(int seq, struct msg message, int checksum){
+void make_pkt(int seq, struct msg message, int check_sum){
     msg_pkt->seqnum = seq;
     msg_pkt->acknum = seq;
     strcpy(msg_pkt->payload, message.data);
-    msg_pkt->checksum = checksum + msg_pkt->seqnum + msg_pkt->acknum;
+    msg_pkt->checksum = check_sum + msg_pkt->seqnum + msg_pkt->acknum;
 }
 
-void make_ack(int seq, int checksum){
+void make_ack(int seq, int check_sum){
     ack_pkt->seqnum = seq;
     ack_pkt->acknum = seq;
     ack_pkt->checksum = ack_pkt->seqnum + ack_pkt->acknum;
