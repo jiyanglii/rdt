@@ -5,9 +5,8 @@
 #include <string.h>
 #include <strings.h>
 #include <getopt.h>
-#include "abt.h"
 
-
+#define MSG_SIZE 1000
 /* ******************************************************************
  ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.1  J.F.Kurose
 
@@ -37,17 +36,26 @@ int checksum(char *str){
         sum += str[j];
         j++;
     }
+//    while (sum >> 16) {
+//        sum = (sum & 0xFFFF) + (sum >> 16);
+//    }
     return sum;
 }
 
-void make_pkt(int seq, struct msg message, int checksum){
+void make_pkt(int seq, struct msg message, int check_sum){
+    printf("make_pkt\n");
+    printf("%d\n", msg_pkt->seqnum);
+    printf("%d\n", msg_pkt->acknum);
     msg_pkt->seqnum = seq;
     msg_pkt->acknum = seq;
+    printf("seq and ack set!\n");
     strcpy(msg_pkt->payload, message.data);
-    msg_pkt->checksum = checksum + msg_pkt->seqnum + msg_pkt->acknum;
+    printf("Message copied!\n");
+    msg_pkt->checksum = check_sum + msg_pkt->seqnum + msg_pkt->acknum;
+    printf("checksum set!\n");
 }
 
-void make_ack(int seq, int checksum){
+void make_ack(int seq, int check_sum){
     ack_pkt->seqnum = seq;
     ack_pkt->acknum = seq;
     ack_pkt->checksum = ack_pkt->seqnum + ack_pkt->acknum;
@@ -63,12 +71,18 @@ void A_output(message)
         exit(-1);
     }
     buffer[msgc] = message;
+    printf("Message received from layer5: %s\n", message.data);
+    printf("string length: %ld\n", strlen(message.data));
     check_msg = checksum(message.data);
-    make_pkt(seq, (struct msg)message, check_msg);
+    printf("the check_sum is: %d\n", check_msg);
+    printf("seq is: %d\n", seq);
+    make_pkt(seq, message, check_msg);
+    printf("Packet made!\n");
     tolayer3(0, (struct pkt)*msg_pkt);
     msgc++;
     starttimer(0, increment);
     seq = (seq + 1) % 2;
+    printf("A_output done!\n");
 }
 
 /* called from layer 3, when a packet arrives for layer 4 */
@@ -83,6 +97,7 @@ void A_input(packet)
             stoptimer(0);
         }
     }
+    printf("A_input done!\n");
 }
 
 /* called when A's timer goes off */
@@ -90,6 +105,7 @@ void A_timerinterrupt()
 {
     tolayer3(0, (struct pkt)*msg_pkt);
     starttimer(0, increment);
+    printf("A_timerinterrupt!\n");
 
 }
 
@@ -119,7 +135,7 @@ void B_input(packet)
             exp_seq = (exp_seq + 1) % 2;
         }
     }
-
+    printf("B_input done!\n");
 }
 
 /* the following routine will be called once (only) before any other */
