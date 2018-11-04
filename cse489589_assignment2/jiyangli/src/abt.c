@@ -46,7 +46,8 @@ void make_pkt(int seq, struct msg message, int check_sum){
     msg_pkt.seqnum = seq;
     msg_pkt.acknum = seq;
     printf("seq and ack set!\n");
-    strcpy(msg_pkt.payload, message.data);
+    message.data[19] = '\0';
+    strcpy(&msg_pkt.payload[0], &message.data[0]);
     printf("Message copied!\n");
     msg_pkt.checksum = check_sum + msg_pkt.seqnum + msg_pkt.acknum;
     printf("checksum set!\n");
