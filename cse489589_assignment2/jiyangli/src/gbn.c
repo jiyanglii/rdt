@@ -95,27 +95,27 @@ struct pkt packet;
 /* called when A's timer goes off */
 void A_timerinterrupt()
 {
-    int check_msg;
+//    int check_msg;
     next_seq = base;
-    while(next_seq < base + N){
-        if(next_seq == base)
-            starttimer(0, increment);
-        check_msg = checksum(buffer[next_seq].data);
-        make_pkt(next_seq, buffer[next_seq], check_msg);
-        tolayer3(0, msg_pkt);
-        next_seq++;
-    }
+//    while(next_seq < base + N){
+//        if(next_seq == base)
+//            starttimer(0, increment);
+//        check_msg = checksum(buffer[next_seq].data);
+//        make_pkt(next_seq, buffer[next_seq], check_msg);
+//        tolayer3(0, msg_pkt);
+//        next_seq++;
+//    }
 }
 
 /* the following routine will be called once (only) before any other */
 /* entity A routines are called. You can use it to do any initialization */
 void A_init()
 {
-    int msgc = 0;
-    int seq = 0;
-    float increment = 15;
-    int base = 0;
-    int next_seq = 0;
+    msgc = 0;
+    seq = 0;
+    increment = 15;
+    base = 0;
+    next_seq = 0;
 
 }
 
