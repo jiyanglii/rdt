@@ -29,8 +29,8 @@ static int exp_seq;
 static int next_seq;
 static int base;
 static float increment;
-static struct pkt *msg_pkt;
-static struct pkt *ack_pkt;
+static struct pkt msg_pkt;
+static struct pkt ack_pkt;
 static struct msg buffer[MSG_SIZE];
 
 
@@ -45,16 +45,16 @@ int checksum(char *str){
 }
 
 void make_pkt(int seq, struct msg message, int check_sum){
-    msg_pkt->seqnum = seq;
-    msg_pkt->acknum = seq;
-    strcpy(msg_pkt->payload, message.data);
-    msg_pkt->checksum = check_sum + msg_pkt->seqnum + msg_pkt->acknum;
+    msg_pkt.seqnum = seq;
+    msg_pkt.acknum = seq;
+    strcpy(msg_pkt.payload, message.data);
+    msg_pkt.checksum = check_sum + msg_pkt.seqnum + msg_pkt.acknum;
 }
 
 void make_ack(int seq, int check_sum){
-    ack_pkt->seqnum = seq;
-    ack_pkt->acknum = seq;
-    ack_pkt->checksum = ack_pkt->seqnum + ack_pkt->acknum;
+    ack_pkt.seqnum = seq;
+    ack_pkt.acknum = seq;
+    ack_pkt.checksum = ack_pkt.seqnum + ack_pkt.acknum;
 }
 
 /* called from layer 5, passed the data to be sent to other side */
@@ -72,7 +72,7 @@ struct msg message;
             starttimer(0, increment);
         check_msg = checksum(buffer[next_seq].data);
         make_pkt(next_seq, buffer[next_seq], check_msg);
-        tolayer3(0, (struct pkt)*msg_pkt);
+        tolayer3(0, msg_pkt);
         next_seq++;
     }
 }
@@ -102,7 +102,7 @@ void A_timerinterrupt()
             starttimer(0, increment);
         check_msg = checksum(buffer[next_seq].data);
         make_pkt(next_seq, buffer[next_seq], check_msg);
-        tolayer3(0, (struct pkt)*msg_pkt);
+        tolayer3(0, msg_pkt);
         next_seq++;
     }
 }
@@ -130,16 +130,15 @@ struct pkt packet;
     if(check_msg == packet.checksum){
         if(packet.seqnum == exp_seq){
             make_ack(packet.seqnum, check_msg);
-            tolayer3(1, (struct pkt)*ack_pkt);
+            tolayer3(1, ack_pkt);
             tolayer5(1, packet.payload);
             exp_seq++;
         }
         else{
             make_ack(exp_seq - 1, check_msg);
-            tolayer3(1, (struct pkt)*ack_pkt);
+            tolayer3(1, ack_pkt);
         }
     }
-
 }
 
 /* the following routine will be called once (only) before any other */
