@@ -233,6 +233,7 @@ int main(int argc, char **argv)
             else
             {
                 B_transport += 1;
+                //printf("%s\n", pkt2give);
                 B_input(pkt2give);
             }
 

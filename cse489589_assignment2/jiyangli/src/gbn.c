@@ -47,8 +47,14 @@ int checksum(char *str){
 void make_pkt(int seq, struct msg message, int check_sum){
     msg_pkt.seqnum = seq;
     msg_pkt.acknum = seq;
-    message.data[19] = '\0';
-    strcpy(msg_pkt.payload, message.data);
+
+    for(int i=0;i<20;i++){
+        msg_pkt.payload[i] = message.data[i];
+    }
+    //char temp[21];
+    //memcpy(temp, message.data, 20);
+    //temp[19] = '\0';
+    //strcpy(msg_pkt.payload, temp);
     msg_pkt.checksum = check_sum + msg_pkt.seqnum + msg_pkt.acknum;
 }
 
