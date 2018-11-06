@@ -85,10 +85,10 @@ struct pkt packet;
     check_ack = packet.seqnum + packet.acknum;
     if(check_ack == packet.checksum){
 
-        if(packet.acknum == next_seq - 1){
-            stoptimer(0);
+        if(packet.acknum == next_seq - 1)
             base++;
-        }
+        if(base == next_seq)
+            stoptimer(0);
     }
 }
 
