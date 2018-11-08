@@ -7,7 +7,7 @@
 #include <getopt.h>
 
 #define MSG_SIZE 1000  /* maximum number of messages can buffer */
-#define N 10           /* window size */
+//#define N 10           /* window size */
 
 /* ******************************************************************
  ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.1  J.F.Kurose
@@ -23,6 +23,7 @@
  **********************************************************************/
 
 /********* STUDENTS WRITE THE NEXT SIX ROUTINES *********/
+static int    N;
 static int    msgc;
 static int    seq;
 static int    exp_seq;
@@ -32,26 +33,28 @@ static int    count;
 //static int    timer;
 static float  increment;
 static double timevalue[MSG_SIZE];
-static int    b_ack[MSG_SIZE*N];
+static int    b_ack[MSG_SIZE*10];
 
 static int    ackval[MSG_SIZE];
 static struct pkt msg_pkt[MSG_SIZE];
 static struct pkt ack_pkt;
-static struct pkt rcv_pkt[MSG_SIZE*N];
+static struct pkt rcv_pkt[MSG_SIZE*10];
 static struct msg buffer[MSG_SIZE];
 
 int timemin( ) {
     double tmp;
     int    index;
+    //    index = 0;
+    //    tmp   = timevalue[base];
     
-    for(int i = 0; i < (next_seq - base); i++) {
+    for(int i = 1; i < (next_seq - base); i++) {
         if(ackval[base+i] == 0)
             index = i;
         tmp   = timevalue[base+i];
         break;
     }
     
-    for(int i = 0; i < (next_seq - base); i++) {
+    for(int i = 1; i < (next_seq - base); i++) {
         if((ackval[base+i] == 0)&&(timevalue[base+i] < tmp)) {
             tmp   = timevalue[base+i];
             index = i;
@@ -120,7 +123,6 @@ struct pkt packet;
 {
     int check_ack;
     check_ack = packet.seqnum + packet.acknum;
-    printf("timeout received ack packet is %d",packet.acknum);
     
     if(check_ack == packet.checksum){
         if((packet.acknum >= base)&&(packet.acknum < next_seq)) {
@@ -154,12 +156,11 @@ void A_timerinterrupt()
 {
     int min_index, min_next;
     min_index = timemin();
-    printf("timeout base %d\n", base);
-    printf("timeout happened %d\n", base + min_index);
-    printf("timeout retrans packets %d\n", msg_pkt[base+min_index].seqnum);
     tolayer3(0, msg_pkt[base+min_index]);
     timevalue[base+min_index] = get_sim_time();
     //stoptimer(0);
+    printf("timeout base %d\n", base);
+    printf("timeout happened %d\n", base + min_index);
     
     min_next = timemin();
     printf("timeout happened the next time %d\n", base + min_next);
@@ -176,6 +177,7 @@ void A_init()
     increment = 15;
     base = 0;
     next_seq = 0;
+    N = getwinsize();
     
 }
 

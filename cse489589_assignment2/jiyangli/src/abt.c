@@ -24,10 +24,10 @@
 static int msgc = 0;
 static int seq = 0;
 static int exp_seq = 0;
-static int stop_wait;
-static int count_msg;
+static int stop_wait = 0;
+static int count_msg = 0;
 static int N;
-static float increment = 15;
+static int increment = 20;
 static struct pkt msg_pkt;
 static struct pkt ack_pkt;
 static struct msg buffer[MSG_SIZE];
@@ -39,9 +39,6 @@ int checksum(char *str){
         sum += str[j];
         j++;
     }
-//    while (sum >> 16) {
-//        sum = (sum & 0xFFFF) + (sum >> 16);
-//    }
     return sum;
 }
 
@@ -71,9 +68,8 @@ void A_output(message)
     msgc++;
 
     if(stop_wait == 0){
-        check_msg = checksum(message.data);
+        check_msg = checksum(buffer[count_msg].data);
         make_pkt(seq, buffer[count_msg], check_msg);
-        printf("check packet sent: %d\n", count_msg);
         tolayer3(0, msg_pkt);
         starttimer(0, increment);
         stop_wait = 1;
@@ -90,7 +86,6 @@ void A_input(packet)
         if(packet.acknum == seq){
             seq = (seq + 1) % 2;
             stoptimer(0);
-            printf("check packet received: %d\n", count_msg);
             count_msg++;
         }
     }
@@ -100,10 +95,9 @@ void A_input(packet)
 /* called when A's timer goes off */
 void A_timerinterrupt()
 {
-    stop_wait = 0;
     
+    stop_wait = 0;
     tolayer3(0, msg_pkt);
-//    seq = (seq + 1) % 2;
     starttimer(0, increment);
     stop_wait = 1;
 }
@@ -112,13 +106,7 @@ void A_timerinterrupt()
 /* entity A routines are called. You can use it to do any initialization */
 void A_init()
 {
-    msgc = 0;
-    seq = 0;
-    count_msg = 0;
-    stop_wait = 0;
-    increment = 20;
     N = getwinsize();
-
 }
 
 /* Note that with simplex transfer from a-to-B, there is no B_output() */
@@ -143,5 +131,5 @@ void B_input(packet)
 /* entity B routines are called. You can use it to do any initialization */
 void B_init()
 {
-    exp_seq = 0;
+    
 }
