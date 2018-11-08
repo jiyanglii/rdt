@@ -26,6 +26,7 @@ static int seq = 0;
 static int exp_seq = 0;
 static int stop_wait;
 static int count_msg;
+static int N;
 static float increment = 15;
 static struct pkt msg_pkt;
 static struct pkt ack_pkt;
@@ -69,7 +70,7 @@ void A_output(message)
     buffer[msgc] = message;
     msgc++;
 
-    while((stop_wait == 0)&&(count_msg < msgc)){
+    if(stop_wait == 0){
         check_msg = checksum(message.data);
         make_pkt(seq, buffer[count_msg], check_msg);
         printf("check packet sent: %d\n", count_msg);
@@ -111,11 +112,12 @@ void A_timerinterrupt()
 /* entity A routines are called. You can use it to do any initialization */
 void A_init()
 {
-    int msgc = 0;
-    int seq = 0;
-    int count_msg = 0;
-    int stop_wait = 0;
-    float increment = 15;
+    msgc = 0;
+    seq = 0;
+    count_msg = 0;
+    stop_wait = 0;
+    increment = 20;
+    N = getwinsize();
 
 }
 
@@ -141,5 +143,5 @@ void B_input(packet)
 /* entity B routines are called. You can use it to do any initialization */
 void B_init()
 {
-    int exp_seq = 0;
+    exp_seq = 0;
 }
