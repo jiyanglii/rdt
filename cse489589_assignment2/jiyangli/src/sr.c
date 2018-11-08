@@ -7,6 +7,7 @@
 #include <getopt.h>
 
 #define MSG_SIZE 1000  /* maximum number of messages can buffer */
+#define N 10           /* window size */
 
 /* ******************************************************************
  ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.1  J.F.Kurose
@@ -28,7 +29,6 @@ static int    exp_seq;
 static int    next_seq;
 static int    base;
 static int    count;
-static int    N;
 //static int    timer;
 static float  increment;
 static double timevalue[MSG_SIZE];
@@ -43,15 +43,18 @@ static struct msg buffer[MSG_SIZE];
 int timemin( ) {
     double tmp;
     int    index;
-    tmp = timevalue[base];
     
-    for(int i = 1; i < N; i++) {
+    for(int i = 0; i < (next_seq - base); i++) {
+        if(ackval[base+i] == 0)
+            index = i;
+        tmp   = timevalue[base+i];
+        break;
+    }
+    
+    for(int i = 0; i < (next_seq - base); i++) {
         if((ackval[base+i] == 0)&&(timevalue[base+i] < tmp)) {
             tmp   = timevalue[base+i];
             index = i;
-        }
-        else{
-            index = 0;
         }
     }
     return index;
@@ -93,7 +96,7 @@ struct msg message;
     
     buffer[msgc] = message;
     msgc++;
-    printf("check base: %d\n", base);
+    
     if(next_seq < base + N){
         a_check_msg = checksum(buffer[next_seq].data);
         make_pkt(next_seq, buffer[next_seq], a_check_msg, next_seq);
@@ -107,6 +110,7 @@ struct msg message;
         }
         
         next_seq++;
+        printf("the value of next_seq is: %d\n",next_seq);
     }
 }
 
@@ -116,11 +120,12 @@ struct pkt packet;
 {
     int check_ack;
     check_ack = packet.seqnum + packet.acknum;
+    printf("timeout received ack packet is %d",packet.acknum);
     
     if(check_ack == packet.checksum){
-        if((packet.acknum >= base)&&(packet.acknum < next_seq)){
+        if((packet.acknum >= base)&&(packet.acknum < next_seq)) {
             if(packet.acknum == base) {
-                ackval[base] =1;
+                ackval[base] = 1;
                 stoptimer(0);
                 base++;
                 
@@ -141,6 +146,7 @@ struct pkt packet;
             }
         }
     }
+    printf("the value of base is: %d\n",base);
 }
 
 /* called when A's timer goes off */
@@ -148,11 +154,15 @@ void A_timerinterrupt()
 {
     int min_index, min_next;
     min_index = timemin();
+    printf("timeout base %d\n", base);
+    printf("timeout happened %d\n", base + min_index);
+    printf("timeout retrans packets %d\n", msg_pkt[base+min_index].seqnum);
     tolayer3(0, msg_pkt[base+min_index]);
     timevalue[base+min_index] = get_sim_time();
-//    stoptimer(0);
+    //stoptimer(0);
     
     min_next = timemin();
+    printf("timeout happened the next time %d\n", base + min_next);
     starttimer(0, increment - (get_sim_time() - timevalue[base + min_next]));
     
 }
@@ -166,7 +176,6 @@ void A_init()
     increment = 15;
     base = 0;
     next_seq = 0;
-    N = getwinsize();
     
 }
 
@@ -176,22 +185,24 @@ void A_init()
 void B_input(packet)
 struct pkt packet;
 {
+    printf("the received packet number is:%d", packet.seqnum);
     int b_check_msg;
     b_check_msg = packet.seqnum + packet.acknum + checksum(packet.payload);
     
     if(b_check_msg == packet.checksum) {
         if((packet.seqnum >= exp_seq)&&(packet.seqnum < exp_seq + N)) {
             make_ack(packet.seqnum,b_check_msg);
-            tolayer3(1,ack_pkt);
+            tolayer3(1, ack_pkt);
             strcpy(rcv_pkt[packet.seqnum].payload, packet.payload);
             
             if(packet.seqnum == exp_seq) {
                 tolayer5(1,packet.payload);
+                b_ack[exp_seq] == 1;
                 exp_seq++;
                 
                 for(int i = 0; i< N; i++){
                     if(b_ack[exp_seq] == 1) {
-                        tolayer5(1,rcv_pkt[exp_seq].payload);
+                        tolayer5(1, rcv_pkt[exp_seq].payload);
                         exp_seq++;
                     }
                     else {
@@ -203,7 +214,12 @@ struct pkt packet;
                 b_ack[packet.seqnum] = 1;
             }
         }
+        else{
+            make_ack(packet.seqnum,b_check_msg);
+            tolayer3(1, ack_pkt);
+        }
     }
+    printf("the value of exp_seq is: %d\n",exp_seq);
 }
 
 /* the following routine will be called once (only) before any other */

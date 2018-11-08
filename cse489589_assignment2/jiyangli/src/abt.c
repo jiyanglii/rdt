@@ -24,8 +24,8 @@
 static int msgc = 0;
 static int seq = 0;
 static int exp_seq = 0;
-static int stop_wait = 1;
-static int count_msg = 0;
+static int stop_wait;
+static int count_msg;
 static float increment = 15;
 static struct pkt msg_pkt;
 static struct pkt ack_pkt;
@@ -68,14 +68,15 @@ void A_output(message)
     }
     buffer[msgc] = message;
     msgc++;
-    if(stop_wait == 1){
+
+    while((stop_wait == 0)&&(count_msg < msgc)){
         check_msg = checksum(message.data);
         make_pkt(seq, buffer[count_msg], check_msg);
+        printf("check packet sent: %d\n", count_msg);
         tolayer3(0, msg_pkt);
         starttimer(0, increment);
-        count_msg++;
+        stop_wait = 1;
     }
-    stop_wait = 0;
 }
 
 /* called from layer 3, when a packet arrives for layer 4 */
@@ -88,17 +89,22 @@ void A_input(packet)
         if(packet.acknum == seq){
             seq = (seq + 1) % 2;
             stoptimer(0);
+            printf("check packet received: %d\n", count_msg);
+            count_msg++;
         }
     }
-    stop_wait = 1;
+    stop_wait = 0;
 }
 
 /* called when A's timer goes off */
 void A_timerinterrupt()
 {
+    stop_wait = 0;
+    
     tolayer3(0, msg_pkt);
 //    seq = (seq + 1) % 2;
     starttimer(0, increment);
+    stop_wait = 1;
 }
 
 /* the following routine will be called once (only) before any other */
@@ -107,6 +113,8 @@ void A_init()
 {
     int msgc = 0;
     int seq = 0;
+    int count_msg = 0;
+    int stop_wait = 0;
     float increment = 15;
 
 }

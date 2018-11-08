@@ -28,7 +28,7 @@ static int exp_seq;
 static int next_seq;
 static int base;
 static int N;
-static int retran = 0;
+static int retran;
 static float increment;
 static struct pkt msg_pkt[MSG_SIZE];
 static struct pkt ack_pkt;
@@ -78,9 +78,6 @@ struct msg message;
                 starttimer(0, increment);
             }
             next_seq++;
-            //        exp_seq = next_seq - 1;
-            
-            printf("Check output base: %d\n", base);
         }
     }
     
@@ -117,9 +114,7 @@ void A_timerinterrupt()
         tmp = base + N;
     }
     while(next_seq < tmp){
-        printf("interrupt next_seq: %d\n", next_seq);
         tolayer3(0, msg_pkt[next_seq]);
-        printf("interrupt msg_pkt: %d\n", msg_pkt[next_seq].seqnum);
         next_seq++;
     }
     retran = 0;
@@ -135,6 +130,7 @@ void A_init()
     base = 0;
     next_seq = 0;
     N = getwinsize();
+    retran = 0;
 
 }
 
@@ -145,8 +141,6 @@ void B_input(packet)
 struct pkt packet;
 {
     int check_msg;
-    printf("Check packet_seq: %d\n", packet.seqnum);
-    printf("Check exp_seq: %d\n", exp_seq);
     check_msg = packet.seqnum + packet.acknum + checksum(packet.payload);
     if(check_msg == packet.checksum){
         if(packet.seqnum == exp_seq){
