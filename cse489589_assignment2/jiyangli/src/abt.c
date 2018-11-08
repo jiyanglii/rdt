@@ -24,6 +24,8 @@
 static int msgc = 0;
 static int seq = 0;
 static int exp_seq = 0;
+static int stop_wait = 1;
+static int count_msg = 0;
 static float increment = 15;
 static struct pkt msg_pkt;
 static struct pkt ack_pkt;
@@ -45,12 +47,8 @@ int checksum(char *str){
 void make_pkt(int seq, struct msg message, int check_sum){
     msg_pkt.seqnum = seq;
     msg_pkt.acknum = seq;
-    printf("seq and ack set!\n");
-    message.data[19] = '\0';
-    strcpy(&msg_pkt.payload[0], &message.data[0]);
-    printf("Message copied!\n");
+    strcpy(msg_pkt.payload, message.data);
     msg_pkt.checksum = check_sum + msg_pkt.seqnum + msg_pkt.acknum;
-    printf("checksum set!\n");
 }
 
 void make_ack(int seq, int check_sum){
@@ -69,18 +67,15 @@ void A_output(message)
         exit(-1);
     }
     buffer[msgc] = message;
-    printf("Message received from layer5: %s\n", message.data);
-    printf("string length: %ld\n", strlen(message.data));
-    check_msg = checksum(message.data);
-    printf("the check_sum is: %d\n", check_msg);
-    printf("seq is: %d\n", seq);
-    make_pkt(seq, message, check_msg);
-    printf("Packet made!\n");
-    tolayer3(0, msg_pkt);
     msgc++;
-    starttimer(0, increment);
-    seq = (seq + 1) % 2;
-    printf("A_output done!\n");
+    if(stop_wait == 1){
+        check_msg = checksum(message.data);
+        make_pkt(seq, buffer[count_msg], check_msg);
+        tolayer3(0, msg_pkt);
+        starttimer(0, increment);
+        count_msg++;
+    }
+    stop_wait = 0;
 }
 
 /* called from layer 3, when a packet arrives for layer 4 */
@@ -90,21 +85,20 @@ void A_input(packet)
     int check_ack;
     check_ack = packet.seqnum + packet.acknum;
     if(check_ack == packet.checksum){
-
-        if(packet.acknum != seq){
+        if(packet.acknum == seq){
+            seq = (seq + 1) % 2;
             stoptimer(0);
         }
     }
-    printf("A_input done!\n");
+    stop_wait = 1;
 }
 
 /* called when A's timer goes off */
 void A_timerinterrupt()
 {
     tolayer3(0, msg_pkt);
+//    seq = (seq + 1) % 2;
     starttimer(0, increment);
-    printf("A_timerinterrupt!\n");
-
 }
 
 /* the following routine will be called once (only) before any other */
@@ -133,7 +127,6 @@ void B_input(packet)
             exp_seq = (exp_seq + 1) % 2;
         }
     }
-    printf("B_input done!\n");
 }
 
 /* the following routine will be called once (only) before any other */

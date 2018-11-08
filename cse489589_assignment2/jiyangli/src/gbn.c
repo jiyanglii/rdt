@@ -7,7 +7,6 @@
 #include <getopt.h>
 
 #define MSG_SIZE 1000  /* maximum number of messages can buffer */
-#define N 10           /* window size */
 
 /* ******************************************************************
  ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.1  J.F.Kurose
@@ -28,8 +27,10 @@ static int seq;
 static int exp_seq;
 static int next_seq;
 static int base;
+static int N;
+static int retran = 0;
 static float increment;
-static struct pkt msg_pkt;
+static struct pkt msg_pkt[MSG_SIZE];
 static struct pkt ack_pkt;
 static struct msg buffer[MSG_SIZE];
 
@@ -44,18 +45,11 @@ int checksum(char *str){
     return sum;
 }
 
-void make_pkt(int seq, struct msg message, int check_sum){
-    msg_pkt.seqnum = seq;
-    msg_pkt.acknum = seq;
-
-    for(int i=0;i<20;i++){
-        msg_pkt.payload[i] = message.data[i];
-    }
-    //char temp[21];
-    //memcpy(temp, message.data, 20);
-    //temp[19] = '\0';
-    //strcpy(msg_pkt.payload, temp);
-    msg_pkt.checksum = check_sum + msg_pkt.seqnum + msg_pkt.acknum;
+void make_pkt(int seq, struct msg message, int check_sum, int next){
+    msg_pkt[next].seqnum = seq;
+    msg_pkt[next].acknum = seq;
+    strcpy(msg_pkt[next].payload, message.data);
+    msg_pkt[next].checksum = check_sum + msg_pkt[next].seqnum + msg_pkt[next].acknum;
 }
 
 void make_ack(int seq, int check_sum){
@@ -74,14 +68,22 @@ struct msg message;
     }
     buffer[msgc] = message;
     msgc++;
-    while(next_seq < base + N){
-        if(next_seq == base)
-            starttimer(0, increment);
-        check_msg = checksum(buffer[next_seq].data);
-        make_pkt(next_seq, buffer[next_seq], check_msg);
-        tolayer3(0, msg_pkt);
-        next_seq++;
+    if(retran == 0){
+        if(next_seq < base + N){
+            
+            check_msg = checksum(buffer[next_seq].data);
+            make_pkt(next_seq, buffer[next_seq], check_msg, next_seq);
+            tolayer3(0, msg_pkt[next_seq]);
+            if(next_seq == base){
+                starttimer(0, increment);
+            }
+            next_seq++;
+            //        exp_seq = next_seq - 1;
+            
+            printf("Check output base: %d\n", base);
+        }
     }
+    
 }
 
 /* called from layer 3, when a packet arrives for layer 4 */
@@ -92,9 +94,10 @@ struct pkt packet;
     check_ack = packet.seqnum + packet.acknum;
     if(check_ack == packet.checksum){
 
-        if(packet.acknum == next_seq - 1){
-            stoptimer(0);
+        if(packet.acknum == base){
             base++;
+            if(retran == 0)
+                stoptimer(0);
         }
     }
 }
@@ -102,7 +105,24 @@ struct pkt packet;
 /* called when A's timer goes off */
 void A_timerinterrupt()
 {
+    int check_msg;
+    int tmp;
+    retran = 1;
     next_seq = base;
+    starttimer(0, increment);
+    if((base + N) > (msgc - 1)) {
+        tmp = msgc;
+    }
+    else{
+        tmp = base + N;
+    }
+    while(next_seq < tmp){
+        printf("interrupt next_seq: %d\n", next_seq);
+        tolayer3(0, msg_pkt[next_seq]);
+        printf("interrupt msg_pkt: %d\n", msg_pkt[next_seq].seqnum);
+        next_seq++;
+    }
+    retran = 0;
 }
 
 /* the following routine will be called once (only) before any other */
@@ -114,6 +134,7 @@ void A_init()
     increment = 15;
     base = 0;
     next_seq = 0;
+    N = getwinsize();
 
 }
 
@@ -124,13 +145,15 @@ void B_input(packet)
 struct pkt packet;
 {
     int check_msg;
+    printf("Check packet_seq: %d\n", packet.seqnum);
+    printf("Check exp_seq: %d\n", exp_seq);
     check_msg = packet.seqnum + packet.acknum + checksum(packet.payload);
     if(check_msg == packet.checksum){
         if(packet.seqnum == exp_seq){
+            exp_seq++;
             make_ack(packet.seqnum, check_msg);
             tolayer3(1, ack_pkt);
             tolayer5(1, packet.payload);
-            exp_seq++;
         }
         else{
             make_ack(exp_seq - 1, check_msg);
@@ -143,5 +166,5 @@ struct pkt packet;
 /* entity B routines are called. You can use it to do any initialization */
 void B_init()
 {
-    int exp_seq = 0;
+    
 }
