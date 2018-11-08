@@ -7,7 +7,6 @@
 #include <getopt.h>
 
 #define MSG_SIZE 1000  /* maximum number of messages can buffer */
-#define N 10           /* window size */
 
 /* ******************************************************************
  ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.1  J.F.Kurose
@@ -29,9 +28,10 @@ static int    exp_seq;
 static int    next_seq;
 static int    base;
 static int    count;
+static int    N;
 //static int    timer;
 static float  increment;
-static double timevalue[MSG_SIZE*N];
+static double timevalue[MSG_SIZE];
 static int    b_ack[MSG_SIZE*N];
 
 static int    ackval[MSG_SIZE];
@@ -39,6 +39,23 @@ static struct pkt msg_pkt[MSG_SIZE];
 static struct pkt ack_pkt;
 static struct pkt rcv_pkt[MSG_SIZE*N];
 static struct msg buffer[MSG_SIZE];
+
+int timemin( ) {
+    double tmp;
+    int    index;
+    tmp = timevalue[base];
+    
+    for(int i = 1; i < N; i++) {
+        if((ackval[base+i] == 0)&&(timevalue[base+i] < tmp)) {
+            tmp   = timevalue[base+i];
+            index = i;
+        }
+        else{
+            index = 0;
+        }
+    }
+    return index;
+}
 
 int checksum(char *str){
     int sum = 0;
@@ -76,7 +93,7 @@ struct msg message;
     
     buffer[msgc] = message;
     msgc++;
-    
+    printf("check base: %d\n", base);
     if(next_seq < base + N){
         a_check_msg = checksum(buffer[next_seq].data);
         make_pkt(next_seq, buffer[next_seq], a_check_msg, next_seq);
@@ -85,7 +102,7 @@ struct msg message;
         timevalue[next_seq] = get_sim_time();
         ackval[next_seq] = 0;
         
-        if(next_seq  == base) {
+        if(next_seq == base) {
             starttimer(0,increment);
         }
         
@@ -103,16 +120,18 @@ struct pkt packet;
     if(check_ack == packet.checksum){
         if((packet.acknum >= base)&&(packet.acknum < next_seq)){
             if(packet.acknum == base) {
-                base++;
                 ackval[base] =1;
                 stoptimer(0);
+                base++;
                 
                 while(base < next_seq) {
                     if(ackval[base] == 1) {
                         base++;
                     }
                     else{
-                        starttimer(0, get_sim_time() - timevalue[base]);
+                        int ind;
+                        ind = timemin();
+                        starttimer(0, increment - (get_sim_time() - timevalue[base+ind]));
                         break;
                     }
                 }
@@ -127,17 +146,15 @@ struct pkt packet;
 /* called when A's timer goes off */
 void A_timerinterrupt()
 {
+    int min_index, min_next;
+    min_index = timemin();
+    tolayer3(0, msg_pkt[base+min_index]);
+    timevalue[base+min_index] = get_sim_time();
+//    stoptimer(0);
     
-    int check_interrupt;
-    check_interrupt = checksum(buffer[base].data);
+    min_next = timemin();
+    starttimer(0, increment - (get_sim_time() - timevalue[base + min_next]));
     
-    stoptimer(0);
-    tolayer3(0, msg_pkt[base]);
-    //timevalue[base] = get_sim_time();
-    //timer++;
-    
-    ackval[base] = 0;
-    starttimer(0,increment);
 }
 
 /* the following routine will be called once (only) before any other */
@@ -149,6 +166,7 @@ void A_init()
     increment = 15;
     base = 0;
     next_seq = 0;
+    N = getwinsize();
     
 }
 
