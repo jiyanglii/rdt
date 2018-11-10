@@ -24,14 +24,14 @@
 
 /********* STUDENTS WRITE THE NEXT SIX ROUTINES *********/
 static int    N;
-static int    msgc;
-static int    seq;
-static int    exp_seq;
-static int    next_seq;
-static int    base;
-static int    count;
+static int    msgc = 0;
+static int    seq = 0;
+static int    exp_seq = 0;
+static int    next_seq = 0;
+static int    base = 0;
+static int    count = 0;
 //static int    timer;
-static float  increment;
+static float  increment = 20;
 static double timevalue[MSG_SIZE];
 static int    b_ack[MSG_SIZE*10];
 
@@ -173,11 +173,6 @@ void A_timerinterrupt()
 /* entity A routines are called. You can use it to do any initialization */
 void A_init()
 {
-    msgc = 0;
-    seq = 0;
-    increment = 20;
-    base = 0;
-    next_seq = 0;
     N = getwinsize();
     
 }
@@ -200,7 +195,7 @@ struct pkt packet;
             
             if(packet.seqnum == exp_seq) {
                 tolayer5(1,packet.payload);
-                b_ack[exp_seq] == 1;
+                b_ack[exp_seq] = 1;
                 exp_seq++;
                 
                 for(int i = 0; i< N; i++){
