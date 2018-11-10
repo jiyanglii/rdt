@@ -22,14 +22,14 @@
  **********************************************************************/
 
 /********* STUDENTS WRITE THE NEXT SIX ROUTINES *********/
-static int msgc;
-static int seq;
-static int exp_seq;
-static int next_seq;
-static int base;
+static int msgc = 0;
+static int seq = 0;
+static int exp_seq = 0;
+static int next_seq = 0;
+static int base = 0;
 static int N;
-static int retran;
-static float increment;
+static int retran = 0;
+static float increment = 20;
 static struct pkt msg_pkt[MSG_SIZE];
 static struct pkt ack_pkt;
 static struct msg buffer[MSG_SIZE];
@@ -124,11 +124,6 @@ void A_timerinterrupt()
 /* entity A routines are called. You can use it to do any initialization */
 void A_init()
 {
-    msgc = 0;
-    seq = 0;
-    increment = 15;
-    base = 0;
-    next_seq = 0;
     N = getwinsize();
     retran = 0;
 
