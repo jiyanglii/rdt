@@ -11,7 +11,7 @@
 
 /* ******************************************************************
  ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.1  J.F.Kurose
-
+ 
  This code should be used for PA2, unidirectional data transfer
  protocols (from A to B). Network properties:
  - one way network delay averages five time units (longer if there
@@ -24,13 +24,14 @@
 
 /********* STUDENTS WRITE THE NEXT SIX ROUTINES *********/
 static int    N;
-static int    msgc = 0;
-static int    seq = 0;
-static int    exp_seq = 0;
-static int    next_seq = 0;
-static int    base = 0;
-static int    count = 0;
-static float  increment = 20;
+static int    msgc;
+static int    seq;
+static int    exp_seq;
+static int    next_seq;
+static int    base;
+static int    count;
+//static int    timer;
+static float  increment;
 static double timevalue[MSG_SIZE];
 static int    b_ack[MSG_SIZE*10];
 
@@ -43,14 +44,17 @@ static struct msg buffer[MSG_SIZE];
 int timemin( ) {
     double tmp;
     int    index;
-
+    index = 0;
+    tmp   = timevalue[base];
+    
     for(int i = 1; i < (next_seq - base); i++) {
-        if(ackval[base+i] == 0)
+        if(ackval[base+i] == 0) {
             index = i;
-        tmp   = timevalue[base+i];
-        break;
+            tmp   = timevalue[base+i];
+            break;
         }
-
+    }
+    
     for(int i = 1; i < (next_seq - base); i++) {
         if((ackval[base+i] == 0)&&(timevalue[base+i] < tmp)) {
             tmp   = timevalue[base+i];
@@ -93,22 +97,22 @@ struct msg message;
     if(msgc > MSG_SIZE - 1){
         exit(-1);
     }
-
+    
     buffer[msgc] = message;
     msgc++;
-
+    
     if(next_seq < base + N){
         a_check_msg = checksum(buffer[next_seq].data);
         make_pkt(next_seq, buffer[next_seq], a_check_msg, next_seq);
         tolayer3(0, msg_pkt[next_seq]);
-
+        
         timevalue[next_seq] = get_sim_time();
         ackval[next_seq] = 0;
-
+        
         if(next_seq == base) {
             starttimer(0,increment);
         }
-
+        
         next_seq++;
         printf("the value of next_seq is: %d\n",next_seq);
     }
@@ -120,28 +124,28 @@ struct pkt packet;
 {
     int check_ack;
     check_ack = packet.seqnum + packet.acknum;
-
+    
     if(check_ack == packet.checksum){
         if((packet.acknum >= base)&&(packet.acknum < next_seq)) {
             if(packet.acknum == base) {
-               ackval[base] = 1;
-               stoptimer(0);
-               base++;
-
-               while(base < next_seq) {
-                   if(ackval[base] == 1) {
-                       base++;
-                   }
-                   else{
-                       int ind;
-                       ind = timemin();
-                       starttimer(0, increment - (get_sim_time() - timevalue[base+ind]));
-                       break;
-                   }
-               }
+                ackval[base] = 1;
+                stoptimer(0);
+                base++;
+                
+                while(base < next_seq) {
+                    if(ackval[base] == 1) {
+                        base++;
+                    }
+                    else{
+                        int ind;
+                        ind = timemin();
+                        starttimer(0, increment - (get_sim_time() - timevalue[base+ind]));
+                        break;
+                    }
+                }
             }
             else {
-               ackval[packet.acknum] = 1;
+                ackval[packet.acknum] = 1;
             }
         }
     }
@@ -158,19 +162,24 @@ void A_timerinterrupt()
     //stoptimer(0);
     printf("timeout base %d\n", base);
     printf("timeout happened %d\n", base + min_index);
-
+    
     min_next = timemin();
     printf("timeout happened the next time %d\n", base + min_next);
     starttimer(0, increment - (get_sim_time() - timevalue[base + min_next]));
-
+    
 }
 
 /* the following routine will be called once (only) before any other */
 /* entity A routines are called. You can use it to do any initialization */
 void A_init()
 {
+    msgc = 0;
+    seq = 0;
+    increment = 20;
+    base = 0;
+    next_seq = 0;
     N = getwinsize();
-
+    
 }
 
 /* Note that with simplex transfer from a-to-B, there is no B_output() */
@@ -182,18 +191,18 @@ struct pkt packet;
     printf("the received packet number is:%d", packet.seqnum);
     int b_check_msg;
     b_check_msg = packet.seqnum + packet.acknum + checksum(packet.payload);
-
+    
     if(b_check_msg == packet.checksum) {
         if((packet.seqnum >= exp_seq)&&(packet.seqnum < exp_seq + N)) {
             make_ack(packet.seqnum,b_check_msg);
             tolayer3(1, ack_pkt);
             strcpy(rcv_pkt[packet.seqnum].payload, packet.payload);
-
+            
             if(packet.seqnum == exp_seq) {
                 tolayer5(1,packet.payload);
                 b_ack[exp_seq] == 1;
                 exp_seq++;
-
+                
                 for(int i = 0; i< N; i++){
                     if(b_ack[exp_seq] == 1) {
                         tolayer5(1, rcv_pkt[exp_seq].payload);
@@ -220,4 +229,5 @@ struct pkt packet;
 /* entity B routines are called. You can use it to do any initialization */
 void B_init()
 {
+    int exp_seq = 0;
 }
