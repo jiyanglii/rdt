@@ -7,7 +7,7 @@
 #include <getopt.h>
 
 #define MSG_SIZE 1000  /* maximum number of messages can buffer */
-//#define N 10           /* window size */
+#define TRAVEL_TIME 20
 
 /* ******************************************************************
  ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.1  J.F.Kurose
@@ -31,7 +31,6 @@ static int    next_seq = 0;
 static int    base = 0;
 static int    count = 0;
 //static int    timer;
-static float  increment = 20;
 static double timevalue[MSG_SIZE];
 static int    b_ack[MSG_SIZE*10];
 
@@ -110,7 +109,7 @@ struct msg message;
         ackval[next_seq] = 0;
         
         if(next_seq == base) {
-            starttimer(0,increment);
+            starttimer(0,TRAVEL_TIME);
         }
         
         next_seq++;
@@ -139,7 +138,7 @@ struct pkt packet;
                     else{
                         int ind;
                         ind = timemin();
-                        starttimer(0, increment - (get_sim_time() - timevalue[base+ind]));
+                        starttimer(0, TRAVEL_TIME - (get_sim_time() - timevalue[base+ind]));
                         break;
                     }
                 }
@@ -165,7 +164,7 @@ void A_timerinterrupt()
     
     min_next = timemin();
     printf("timeout happened the next time %d\n", base + min_next);
-    starttimer(0, increment - (get_sim_time() - timevalue[base + min_next]));
+    starttimer(0, TRAVEL_TIME - (get_sim_time() - timevalue[base + min_next]));
     
 }
 

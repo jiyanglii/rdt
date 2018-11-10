@@ -7,7 +7,7 @@
 #include <getopt.h>
 
 #define MSG_SIZE 1000  /* maximum number of messages can buffer */
-//#define N 10           /* window size */
+#define TRAVEL_TIME 20
 
 /* ******************************************************************
  ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.1  J.F.Kurose
@@ -31,7 +31,6 @@ static int    next_seq;
 static int    base;
 static int    count;
 //static int    timer;
-static float  increment;
 static int    b_ack[MSG_SIZE*10];
 
 static struct pkt msg_pkt[MSG_SIZE];
@@ -81,7 +80,7 @@ struct msg message;
         make_pkt(next_seq, buffer[next_seq], a_check_msg, next_seq);
         tolayer3(0, msg_pkt[next_seq]);
         if(next_seq == base) {
-            starttimer(0,increment);
+            starttimer(0,TRAVEL_TIME);
         }
         next_seq++;
         printf("the value of next_seq is: %d\n",next_seq);
@@ -99,7 +98,7 @@ struct pkt packet;
         if((packet.acknum >= base)&&(packet.acknum < next_seq)) {
             base = packet.acknum;
             stoptimer(0);
-            starttimer(0, increment);
+            starttimer(0, TRAVEL_TIME);
         }
     }
     printf("the value of base is: %d\n",base);
@@ -112,7 +111,7 @@ void A_timerinterrupt()
     for(int i = base; i < next_seq; i++) {
         tolayer3(0, msg_pkt[i]);
     }
-    starttimer(0, increment);
+    starttimer(0, TRAVEL_TIME);
     
 }
 
@@ -122,7 +121,6 @@ void A_init()
 {
     msgc = 0;
     seq = 0;
-    increment = 20;
     base = 0;
     next_seq = 0;
     N = getwinsize();

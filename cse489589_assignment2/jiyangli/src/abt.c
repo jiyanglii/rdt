@@ -7,6 +7,8 @@
 #include <getopt.h>
 
 #define MSG_SIZE 1000
+#define TRAVEL_TIME 20
+
 /* ******************************************************************
  ALTERNATING BIT AND GO-BACK-N NETWORK EMULATOR: VERSION 1.1  J.F.Kurose
 
@@ -27,7 +29,6 @@ static int exp_seq = 0;
 static int stop_wait = 0;
 static int count_msg = 0;
 static int N;
-static int increment = 20;
 static struct pkt msg_pkt;
 static struct pkt ack_pkt;
 static struct msg buffer[MSG_SIZE];
@@ -71,7 +72,7 @@ void A_output(message)
         check_msg = checksum(buffer[count_msg].data);
         make_pkt(seq, buffer[count_msg], check_msg);
         tolayer3(0, msg_pkt);
-        starttimer(0, increment);
+        starttimer(0, TRAVEL_TIME);
         stop_wait = 1;
     }
 }
@@ -98,7 +99,7 @@ void A_timerinterrupt()
     
     stop_wait = 0;
     tolayer3(0, msg_pkt);
-    starttimer(0, increment);
+    starttimer(0, TRAVEL_TIME);
     stop_wait = 1;
 }
 
