@@ -31,11 +31,9 @@ static int    next_seq;
 static int    base;
 static int    count;
 //static int    timer;
-static int    b_ack[MSG_SIZE*10];
 
 static struct pkt msg_pkt[MSG_SIZE];
 static struct pkt ack_pkt;
-static struct pkt rcv_pkt[MSG_SIZE*10];
 static struct msg buffer[MSG_SIZE];
 
 int checksum(char *str){
@@ -141,7 +139,6 @@ struct pkt packet;
         if((packet.seqnum >= exp_seq)&&(packet.seqnum < exp_seq + N)) {
             make_ack(exp_seq,b_check_msg);
             tolayer3(1, ack_pkt);
-            //strcpy(rcv_pkt[packet.seqnum].payload, packet.payload);
             
             if(packet.seqnum == exp_seq) {
                 tolayer5(1,packet.payload);
